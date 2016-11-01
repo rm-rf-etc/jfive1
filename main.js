@@ -29,10 +29,20 @@ function setRate(input) {
 }
 
 
+function targetHasChanged() {
+    return state !== state_last;
+}
+
+
+function applyStateChanges() {
+    state_last = state;
+}
+
+
 function loop() {
 
-	if (state_last !== state) {
-		state_last = state;
+	if (targetHasChanged()) {
+		applyStateChanges();
 		led.blink(state);
 	}
 
