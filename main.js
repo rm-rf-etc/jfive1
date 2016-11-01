@@ -5,16 +5,15 @@ var five = require("johnny-five");
 var board = new five.Board();
 
 var led;
-var rate = 500;
-var state = 0;
-var new_state = 0;
+var last_state = 0;
+var state = 300;
 
 
 board.on("ready", function() {
 	led = new five.Led(13);
 
 	this.repl.inject({
-		rate: function(input){ rate = input }
+		rate: setRate
 	});
 
 	setInterval(loop, 0);
@@ -25,14 +24,16 @@ board.on("exit", function() {
 });
 
 
+function setRate(input) {
+	state = parseInt(input, 10);
+}
+
+
 function loop() {
 
-	new_state = rate;
-
-	if (state !== new_state) {
-		led.blink(rate);
+	if (last_state !== state) {
+		last_state = state;
+		led.blink(state);
 	}
-
-	state = rate;
 
 }
