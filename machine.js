@@ -1,5 +1,5 @@
 
-/* State machine for blinking LED's */
+/* State machine */
 
 var old_state = 0;
 var new_state = 300;

@@ -1,5 +1,5 @@
 
-/* State machine for blinking LED's */
+/* Interface for blinking LED's */
 
 var five = require("johnny-five");
 var board = new five.Board();
