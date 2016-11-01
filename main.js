@@ -5,7 +5,7 @@ var five = require("johnny-five");
 var board = new five.Board();
 
 var led;
-var last_state = 0;
+var state_last = 0;
 var state = 300;
 
 
@@ -31,8 +31,8 @@ function setRate(input) {
 
 function loop() {
 
-	if (last_state !== state) {
-		last_state = state;
+	if (state_last !== state) {
+		state_last = state;
 		led.blink(state);
 	}
 
