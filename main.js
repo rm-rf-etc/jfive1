@@ -5,8 +5,15 @@ var five = require("johnny-five");
 var board = new five.Board();
 
 var led;
-var state_last = 0;
-var state = 300;
+var old_state = 0;
+var new_state = 300;
+var delta_rate = 2 / 10 * 1000;
+var t = Date.now();
+
+
+function getDelta(time) {
+    return delta_rate * time;
+}
 
 
 board.on("ready", function() {
@@ -25,17 +32,28 @@ board.on("exit", function() {
 
 
 function setRate(input) {
-	state = parseInt(input, 10);
+	new_state = parseInt(input, 10);
 }
 
 
 function targetHasChanged() {
-    return state !== state_last;
+    return new_state !== old_state;
 }
 
 
 function applyStateChanges() {
-    state_last = state;
+
+    var now = Date.now();
+    var p_delta = getDelta(now - t);
+
+    if (new_state > old_state) {
+        old_state = (old_state + p_delta > new_state) ? new_state : old_state + p_delta;
+    }
+    else {
+        old_state = (old_state - p_delta < new_state) ? new_state : old_state - p_delta;
+    }
+    
+    t = now;
 }
 
 
