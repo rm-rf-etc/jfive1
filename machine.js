@@ -39,7 +39,7 @@ function applyStateChanges() {
     if (new_state > old_state) {
         old_state = (old_state + p_delta > new_state) ? new_state : old_state + p_delta;
     }
-    else {
+    else if (new_state < old_state) {
         old_state = (old_state - p_delta < new_state) ? new_state : old_state - p_delta;
     }
     
