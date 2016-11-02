@@ -2,30 +2,58 @@
 /* State machine tests */
 
 var assert = require("assert");
+var machine = require("./machine_new.js");
 
-// Stub Date.now();
-var time;
-global._Date = global.Date;
-global.Date = function() {};
-global.Date.now = function(){
-  return time * 1000;
-};
+assert(machine.config);
+assert(machine.goto);
+assert(machine.dump);
+assert(machine.tick);
 
-time = 0;
-var machine = require("./machine.js");
+// It idles.
+machine.config({ old_state: 50, new_state: 50 });
+assert( machine.state === 'idle' );
+assert( machine.tick(1) === 50 );
+assert( machine.tick(2) === 50 );
+assert( machine.tick(3) === 50 );
+assert( machine.tick(4) === 50 );
+assert( machine.tick(5) === 50 );
 
-assert(machine.setTarget);
-assert(machine.setup);
-assert(machine.step);
+// It changes to climb.
+machine.config({ old_state: 0, new_state: 0 });
+assert( machine.goto( 0 ) === true );
+assert( machine.state === 'idle' );
+assert( machine.goto( 100 ) === true );
+assert( machine.state === 'climb' );
 
-machine.setup({ delta: 2 / 2 });
+// It changes to descend.
+machine.config({ old_state: 100, new_state: 100 });
+assert( machine.goto( 100 ) === true );
+assert( machine.state === 'idle' );
+assert( machine.goto( 0 ) === true );
+assert( machine.state === 'descend' );
 
-time = 1;
-var res = machine.step();
-assert.equal(res, 1);
-console.log(res);
+// It descends and then idles at destination.
+machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
+assert( machine.goto( 100 ) === true );
+assert( machine.state === 'idle' );
+assert( machine.goto( 0 ) === true);
+assert( machine.state === 'descend' );
+assert( machine.tick( 1 ) === 75 );
+assert( machine.tick( 1 ) === 50 );
+assert( machine.tick( 1 ) === 25 );
+assert( machine.tick( 1 ) === 0 );
+assert( machine.tick( 1 ) === 0 );
+assert( machine.tick( 1 ) === 0 );
 
-time = 2;
-var res = machine.step();
-assert.equal(res, 2);
-console.log(res);
+// It climbs and then idles at destination.
+machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
+assert( machine.goto( 0 ) === true );
+assert( machine.state === 'idle' );
+assert( machine.goto( 100 ) === true);
+assert( machine.state === 'climb' );
+assert( machine.tick( 1 ) === 25 );
+assert( machine.tick( 1 ) === 50 );
+assert( machine.tick( 1 ) === 75 );
+assert( machine.tick( 1 ) === 100 );
+assert( machine.tick( 1 ) === 100 );
+assert( machine.tick( 1 ) === 100 );

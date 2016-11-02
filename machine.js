@@ -4,7 +4,7 @@
 var old_state = 0;
 var new_state = 100;
 var delta_rate = 100 / 5;
-var _t = null;
+var _t = 0;
 var enabled = false;
 // var max;
 
