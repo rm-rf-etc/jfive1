@@ -22,7 +22,7 @@ function numFix(float) {
 
 
 function getDelta(time) {
-    return numFix(delta_rate * time * 0.001);
+  return numFix(delta_rate * time * 0.001);
 }
 
 
@@ -33,23 +33,23 @@ function setRate(input) {
 
 function targetHasChanged() {
 
-    return new_state !== old_state;
+  return new_state !== old_state;
 }
 
 
 function applyStateChanges() {
 
-    var now = Date.now();
-    var p_delta = getDelta(now - t);
+  var now = Date.now();
+  var p_delta = getDelta(now - t);
 
-    if (new_state > old_state) {
-        old_state = numFix((old_state + p_delta > new_state) ? new_state : old_state + p_delta);
-    }
-    else if (new_state < old_state) {
-        old_state = numFix((old_state - p_delta < new_state) ? new_state : old_state - p_delta);
-    }
-    
-    t = now;
+  if (new_state > old_state) {
+    old_state = numFix((old_state + p_delta > new_state) ? new_state : old_state + p_delta);
+  }
+  else if (new_state < old_state) {
+    old_state = numFix((old_state - p_delta < new_state) ? new_state : old_state - p_delta);
+  }
+  
+  t = now;
 }
 
 
@@ -66,4 +66,4 @@ module.exports = {
   setRate: setRate,
   setup: setup,
   step: step,
-}
+};
