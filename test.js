@@ -14,7 +14,7 @@ global.Date.now = function(){
 time = 0;
 var machine = require("./machine.js");
 
-assert(machine.setRate);
+assert(machine.setTarget);
 assert(machine.setup);
 assert(machine.step);
 

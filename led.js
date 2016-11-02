@@ -4,7 +4,6 @@
 var five = require("johnny-five");
 var board = new five.Board();
 var machine = require("./machine.js");
-
 var led;
 
 machine.setup({
@@ -14,6 +13,7 @@ machine.setup({
 
 
 board.on("ready", function() {
+
 	led = new five.Led(13);
 
 	this.repl.inject({
@@ -25,6 +25,8 @@ board.on("ready", function() {
   }, 0);
 });
 
+
 board.on("exit", function() {
+
 	led.off();
 });

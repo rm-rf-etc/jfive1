@@ -17,16 +17,19 @@ function setup(opts) {
 
 
 function numFix(float) {
+
   return parseFloat(float.toPrecision(8));
 }
 
 
 function getDelta(time) {
+
   return numFix(delta_rate * time * 0.001);
 }
 
 
-function setRate(input) {
+function setTarget(input) {
+
   new_state = parseInt(input, 10);
 }
 
@@ -63,7 +66,7 @@ function step() {
 
 
 module.exports = {
-  setRate: setRate,
+  setTarget: setTarget,
   setup: setup,
   step: step,
 };

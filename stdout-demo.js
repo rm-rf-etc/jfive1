@@ -4,19 +4,33 @@
 var machine = require("./machine.js");
 
 machine.setup({
-  delta: 2 / 5,
+  delta: 2 / 1,
   max: 2,
 });
 
 var t = Date.now();
+var direction = "up  ";
+
 
 function time() {
+
   var float = (Date.now() - t) * 0.001;
   return parseFloat(float.toPrecision(4));
 }
 
+
 ;(function() {
   setInterval(function(){
-    console.log(time(), machine.step());
-  }, 50);
+    var res = machine.step();
+    console.log(direction, res, time());
+
+    if (res === 2) {
+      direction = "down";
+      machine.setTarget(0);
+    }
+    else if (res === 0) {
+      direction = "up  ";
+      machine.setTarget(2);
+    }
+  }, 100);
 })();
