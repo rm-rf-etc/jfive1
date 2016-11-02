@@ -7,26 +7,34 @@ var machine = require("./machine.js");
 var led;
 
 machine.setup({
-  delta: 2 / 10,
-  max: 2,
+  delta: 100 / 5,
+  max: 100,
 });
 
 
 board.on("ready", function() {
 
-	led = new five.Led(13);
+  led = new five.Led(13);
 
-	this.repl.inject({
-		rate: machine.setRate
-	});
+  this.repl.inject({
+    goto: machine.setTarget,
+    dump: machine.showData,
+  });
 
-	setInterval(function(){
-    led.blink(machine.step())
-  }, 0);
+  var last;
+  setInterval(function(){
+    var step = machine.step();
+
+    if (step !== last) {
+      console.log(step);
+      led.blink(step);
+      last = step;
+    }
+  }, 600);
 });
 
 
 board.on("exit", function() {
 
-	led.off();
+  led.off();
 });

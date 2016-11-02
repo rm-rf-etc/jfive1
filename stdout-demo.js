@@ -4,8 +4,8 @@
 var machine = require("./machine.js");
 
 machine.setup({
-  delta: 2 / 1,
-  max: 2,
+  delta: 100 / 5,
+  max: 100,
 });
 
 var t = Date.now();

@@ -2,9 +2,10 @@
 /* State machine */
 
 var old_state = 0;
-var new_state = 2;
-var delta_rate = 2 / 5;
-var t = Date.now();
+var new_state = 100;
+var delta_rate = 100 / 5;
+var _t = null;
+var enabled = false;
 // var max;
 
 
@@ -30,7 +31,18 @@ function getDelta(time) {
 
 function setTarget(input) {
 
+  _t = Date.now();
   new_state = parseInt(input, 10);
+}
+
+
+function showData() {
+
+  return {
+    old_state: old_state,
+    new_state: new_state,
+    enabled: enabled,
+  };
 }
 
 
@@ -43,7 +55,7 @@ function targetHasChanged() {
 function applyStateChanges() {
 
   var now = Date.now();
-  var p_delta = getDelta(now - t);
+  var p_delta = getDelta(now - _t);
 
   if (new_state > old_state) {
     old_state = numFix((old_state + p_delta > new_state) ? new_state : old_state + p_delta);
@@ -51,12 +63,17 @@ function applyStateChanges() {
   else if (new_state < old_state) {
     old_state = numFix((old_state - p_delta < new_state) ? new_state : old_state - p_delta);
   }
-  
-  t = now;
+
+  _t = now;
 }
 
 
 function step() {
+
+  if (!enabled) {
+    _t = Date.now();
+    enabled = true;
+  }
 
   if (targetHasChanged()) {
     applyStateChanges();
@@ -67,6 +84,7 @@ function step() {
 
 module.exports = {
   setTarget: setTarget,
+  showData: showData,
   setup: setup,
   step: step,
 };
