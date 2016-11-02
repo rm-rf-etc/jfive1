@@ -2,8 +2,8 @@
 /* State machine */
 
 var old_state = 0;
-var new_state = 300;
-var delta_rate = 2 / 10 * 1000;
+var new_state = 2;
+var delta_rate = 2 / 5;
 var t = Date.now();
 // var max;
 
@@ -11,12 +11,18 @@ var t = Date.now();
 function setup(opts) {
 
   if (opts.delta) {
-    delta_rate = opts.delta * 1000;
+    delta_rate = opts.delta;
   }
 }
 
+
+function numFix(float) {
+  return parseFloat(float.toPrecision(8));
+}
+
+
 function getDelta(time) {
-    return delta_rate * time;
+    return numFix(delta_rate * time * 0.001);
 }
 
 
@@ -37,10 +43,10 @@ function applyStateChanges() {
     var p_delta = getDelta(now - t);
 
     if (new_state > old_state) {
-        old_state = (old_state + p_delta > new_state) ? new_state : old_state + p_delta;
+        old_state = numFix((old_state + p_delta > new_state) ? new_state : old_state + p_delta);
     }
     else if (new_state < old_state) {
-        old_state = (old_state - p_delta < new_state) ? new_state : old_state - p_delta;
+        old_state = numFix((old_state - p_delta < new_state) ? new_state : old_state - p_delta);
     }
     
     t = now;
@@ -51,8 +57,8 @@ function step() {
 
   if (targetHasChanged()) {
     applyStateChanges();
-    return state;
   }
+  return old_state;
 }
 
 
