@@ -6,9 +6,13 @@ var board = new five.Board();
 var machine = require("./machine.js");
 var led;
 
-machine.setup({
+function fixFloat(float) {
+
+  return parseFloat(float.toPrecision(8));
+}
+
+machine.config({
   delta: 100 / 5,
-  max: 100,
 });
 
 
@@ -17,20 +21,21 @@ board.on("ready", function() {
   led = new five.Led(13);
 
   this.repl.inject({
-    goto: machine.setTarget,
-    dump: machine.showData,
+    goto: machine.goto,
+    dump: machine.dump,
   });
 
-  var last;
+  var prev = Date.now();
   setInterval(function(){
-    var step = machine.step();
 
-    if (step !== last) {
+    var step = machine.tick(fixFloat(Date.now() - prev));
+
+    if (machine.state !== "idle") {
       console.log(step);
       led.blink(step);
-      last = step;
     }
-  }, 600);
+    prev = Date.now();
+  }, 300);
 });
 
 

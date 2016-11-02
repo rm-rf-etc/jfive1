@@ -3,34 +3,37 @@
 
 var machine = require("./machine.js");
 
-machine.setup({
+machine.config({
   delta: 100 / 5,
-  max: 100,
 });
 
-var t = Date.now();
+var _t = Date.now();
 var direction = "up  ";
 
 
 function time() {
 
-  var float = (Date.now() - t) * 0.001;
+  var float = (Date.now() - _t);
   return parseFloat(float.toPrecision(4));
 }
 
 
 ;(function() {
   setInterval(function(){
-    var res = machine.step();
-    console.log(direction, res, time());
+    var now = Date.now();
+    var res = machine.tick(now - _t);
+    console.log(direction, res);
 
-    if (res === 2) {
-      direction = "down";
-      machine.setTarget(0);
+    if (machine.state === "idle") {
+      if (direction === "up  ") {
+        direction = "down";
+        machine.goto(0);
+      }
+      else {
+        direction = "up  ";
+        machine.goto(100);
+      }
     }
-    else if (res === 0) {
-      direction = "up  ";
-      machine.setTarget(2);
-    }
+    _t = now;
   }, 100);
 })();
