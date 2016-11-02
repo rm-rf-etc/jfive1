@@ -58,7 +58,7 @@ function config(opts) {
 function climb(time) {
 
   var x = old_state + _d * time;
-  old_state = numFix((x > new_state) ? new_state : x);
+  old_state = fixFloat((x > new_state) ? new_state : x);
 
   return old_state;
 }
@@ -67,7 +67,7 @@ function climb(time) {
 function descend(time) {
 
   var x = old_state - _d * time;
-  old_state = numFix((x < new_state) ? new_state : x);
+  old_state = fixFloat((x < new_state) ? new_state : x);
 
   return old_state;
 }
@@ -130,7 +130,7 @@ module.exports = {
 };
 
 
-function numFix(float) {
+function fixFloat(float) {
 
   return parseFloat(float.toPrecision(8));
 }
