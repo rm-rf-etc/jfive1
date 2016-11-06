@@ -22,9 +22,24 @@ var test = {
 
 if (test.basics) {
 	assert(machine.config);
+	assert(machine.state);
 	assert(machine.goto);
 	assert(machine.dump);
 	assert(machine.tick);
+
+	assert.deepEqual(
+		machine.dump(),
+		{
+			activeProc: machine._private.idle,
+			outputProc: machine._private.naturalResults,
+			old_state: 0,
+			new_state: 0,
+			range: 100,
+			hi: 100,
+			lo: 0,
+			delta: 100 / 5,
+		}
+	);
 
 	// Run tests with adjusted outputs.
 	machine.config({ hi: 100, lo: 0 });
@@ -139,8 +154,8 @@ if (test.adjusted_output) {
 
 	machine.config({ hi: 88, lo: 22 });
 	var dump = machine.dump();
-	var _range = dump._range;
-	var _lo = dump._lo;
+	var range = dump.range;
+	var lo = dump.lo;
 
 	// It has proper climbing fractional steps.
 	machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
@@ -152,7 +167,7 @@ if (test.adjusted_output) {
 	var step = 0.95;
 	for (var i=0; i<4; i=fixFloat(i+step)) {
 		var actual = machine.tick( time(step) );
-		var expected = Math.min(88, fixFloat(100 / 4 * (i+step) * 0.01 * _range + _lo));
+		var expected = Math.min(88, fixFloat(100 / 4 * (i+step) * 0.01 * range + lo));
 		assert.equal( actual, expected, 'It changes correctly to ' + expected + '.' );
 	}
 	assert.equal( machine.tick( time(step) ), 88, 'It idles correctly at 88.' );
@@ -169,7 +184,7 @@ if (test.adjusted_output) {
 	var step = 0.95;
 	for (var i=4; i>0; i=fixFloat(i-step)) {
 		var actual = machine.tick( time(step) );
-		var expected = Math.max(22, fixFloat(100 / 4 * (i-step) * 0.01 * _range + _lo));
+		var expected = Math.max(22, fixFloat(100 / 4 * (i-step) * 0.01 * range + lo));
 		assert.equal( actual, expected, 'It changes correctly to ' + expected + '.' );
 	}
 	assert.equal( machine.tick( time(step) ), 22, 'It idles correctly at 22.' );
