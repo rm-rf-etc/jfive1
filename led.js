@@ -18,9 +18,13 @@ machine.config({
 board.on("ready", function() {
 
   led = new five.Led(13);
+  var changed = false;
 
   this.repl.inject({
-    goto: machine.goto,
+    goto: function(input){
+      changed = true;
+      machine.goto(input)
+    },
     dump: machine.dump,
     config: machine.config,
   });
@@ -30,9 +34,10 @@ board.on("ready", function() {
 
     var step = machine.tick(Date.now() - prev);
 
-    if (machine.state !== "idle") {
+    if (changed) {
       console.log(step);
       led.blink(step);
+      if (machine.state === "idle") changed = false;
     }
     prev = Date.now();
   }, 300);

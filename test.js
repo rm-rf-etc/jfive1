@@ -155,13 +155,13 @@ if (test.advanced) {
 
 	// Run tests with adjusted outputs.
 	machine.config({ hi: 100, lo: 0 });
-	tests();
+	tests(100, 0);
 
 	// Run tests with natural outputs.
 	machine.config({ natural_results: true });
-	tests();
+	tests(100, 0);
 
-	function tests() {
+	function tests(hi, lo) {
 		// It has proper climbing fractional steps.
 		machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(***).' );
@@ -175,9 +175,9 @@ if (test.advanced) {
 			var expected = fixFloat(100 / 4 * (i+step));
 			assert.strictEqual( actual, expected, 'It changes correctly to ' + expected + '.' );
 		}
-		assert.strictEqual( machine.tick( time(step) ), 100, 'It idles correctly at 100.' );
-		assert.strictEqual( machine.tick( time(step) ), 100, 'It idles correctly at 100.' );
-		assert.strictEqual( machine.tick( time(step) ), 100, 'It idles correctly at 100.' );
+		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
+		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
+		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
 
 		// It has proper descending fractional steps.
 		machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
@@ -192,52 +192,72 @@ if (test.advanced) {
 			var expected = fixFloat(100 / 4 * (i-step));
 			assert.strictEqual( actual, expected, 'It changes correctly to ' + expected + '.' );
 		}
-		assert.strictEqual( machine.tick( time(step) ), 0, 'It idles correctly at 0.' );
-		assert.strictEqual( machine.tick( time(step) ), 0, 'It idles correctly at 0.' );
-		assert.strictEqual( machine.tick( time(step) ), 0, 'It idles correctly at 0.' );
+		assert.strictEqual( machine.tick( time(step) ), lo, 'It idles correctly at ' + lo + '.' );
+		assert.strictEqual( machine.tick( time(step) ), lo, 'It idles correctly at ' + lo + '.' );
+		assert.strictEqual( machine.tick( time(step) ), lo, 'It idles correctly at ' + lo + '.' );
 	}
 }
 
 if (test.adjusted_output) {
 
-	machine.config({ hi: 88, lo: 22 });
-	var dump = machine.dump();
-	var range = dump.range;
-	var lo = dump.lo;
+	// Run tests with adjusted outputs.
+	tests(88, 22);
 
-	// It has proper climbing fractional steps.
-	machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
-	assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(0).' );
-	assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
-	assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
-	assert.strictEqual( machine.state, 'climb', 'It enters climb.' );
+	// Run tests with inverse adjusted outputs.
+	tests(22, 88);
 
-	var step = 0.95;
-	for (var i=0; i<4; i=fixFloat(i+step)) {
-		var actual = machine.tick( time(step) );
-		var expected = Math.min(88, fixFloat(100 / 4 * (i+step) * 0.01 * range + lo));
-		assert.strictEqual( actual, expected, 'It changes correctly to ' + expected + '.' );
+
+	function tests(hi, lo) {
+
+		machine.config({ hi: hi, lo: lo });
+		var dump = machine.dump();
+		var range = dump.range;
+		var lo = dump.lo;
+
+		var mathFn;
+		var step = 0.95;
+
+
+		// It has proper climbing fractional steps.
+		machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
+		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(0).' );
+		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
+		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
+		assert.strictEqual( machine.state, 'climb', 'It enters climb.' );
+
+
+		mathFn = (hi > lo) ? Math.min : Math.max;
+
+		for (var i=0; i<4; i=fixFloat(i+step)) {
+			var actual = machine.tick( time(step) );
+			var expected = mathFn(hi, fixFloat(100 / 4 * (i+step) * 0.01 * range + lo));
+			assert.strictEqual( actual, expected, 'It changes correctly to ' + expected + '.' );
+		}
+		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
+		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
+		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
+
+
+
+		// It has proper descending fractional steps.
+		machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
+		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
+		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
+		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` after goto(***).');
+		assert.strictEqual( machine.state, 'descend', 'It enters descend.' );
+
+
+		mathFn = (hi > lo) ? Math.max : Math.min;
+
+		for (var i=4; i>0; i=fixFloat(i-step)) {
+			var actual = machine.tick( time(step) );
+			var expected = mathFn(lo, fixFloat(100 / 4 * (i-step) * 0.01 * range + lo));
+			assert.strictEqual( actual, expected, 'It changes correctly to ' + expected + '.' );
+		}
+		assert.strictEqual( machine.tick( time(step) ), lo, 'It idles correctly at ' + lo + '.' );
+		assert.strictEqual( machine.tick( time(step) ), lo, 'It idles correctly at ' + lo + '.' );
+		assert.strictEqual( machine.tick( time(step) ), lo, 'It idles correctly at ' + lo + '.' );
 	}
-	assert.strictEqual( machine.tick( time(step) ), 88, 'It idles correctly at 88.' );
-	assert.strictEqual( machine.tick( time(step) ), 88, 'It idles correctly at 88.' );
-	assert.strictEqual( machine.tick( time(step) ), 88, 'It idles correctly at 88.' );
-
-	// It has proper descending fractional steps.
-	machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
-	assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
-	assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
-	assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` after goto(***).');
-	assert.strictEqual( machine.state, 'descend', 'It enters descend.' );
-
-	var step = 0.95;
-	for (var i=4; i>0; i=fixFloat(i-step)) {
-		var actual = machine.tick( time(step) );
-		var expected = Math.max(22, fixFloat(100 / 4 * (i-step) * 0.01 * range + lo));
-		assert.strictEqual( actual, expected, 'It changes correctly to ' + expected + '.' );
-	}
-	assert.strictEqual( machine.tick( time(step) ), 22, 'It idles correctly at 22.' );
-	assert.strictEqual( machine.tick( time(step) ), 22, 'It idles correctly at 22.' );
-	assert.strictEqual( machine.tick( time(step) ), 22, 'It idles correctly at 22.' );
 }
 
 console.log('Tests done passed. Yeehaw!');
