@@ -23,6 +23,7 @@ board.on("ready", function() {
   this.repl.inject({
     goto: machine.goto,
     dump: machine.dump,
+    config: machine.config,
   });
 
   var prev = Date.now();
