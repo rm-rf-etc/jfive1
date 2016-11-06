@@ -8,7 +8,7 @@ machine.config({
 });
 
 var _t = Date.now();
-var direction = "up  ";
+var direction = "down";
 
 
 function time() {

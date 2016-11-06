@@ -3,7 +3,7 @@
 
 ;(function(){
 
-  var _self = {
+  var __ = {
     // state process
     activeProc: idle,
     outputProc: naturalResults,
@@ -22,6 +22,29 @@
   };
 
 
+  function reset() {
+
+    __ = {
+      activeProc: idle,
+      outputProc: naturalResults,
+      old_state: 0,
+      new_state: 0,
+      range: 100,
+      hi: 100,
+      lo: 0,
+      delta: 100 / 5,
+    };
+
+    return true;
+  }
+
+
+  function dump() {
+
+    return __;
+  }
+
+
   function config(opts) {
 
     var changed = false;
@@ -29,19 +52,19 @@
     Object.keys(opts).map(function(key){
 
       if (["delta", "old_state", "new_state"].indexOf(key) > -1) {
-        _self[key] = opts[key];
+        __[key] = fixFloat(opts[key]);
         changed = true;
       }
 
       if (["hi", "lo"].indexOf(key) > -1) {
-        _self[key] = opts[key];
-        _self.range = _self.hi - _self.lo;
-        _self.outputProc = adjustedResults;
+        __[key] = fixFloat(opts[key]);
+        __.range = __.hi - __.lo;
+        __.outputProc = adjustedResults;
         changed = true;
       }
 
       if (key === "natural_results") {
-        _self.outputProc = naturalResults;
+        __.outputProc = naturalResults;
         changed = true;
       }
     });
@@ -52,69 +75,63 @@
 
   function climb(time) {
 
-    if (_self.old_state === _self.new_state) {
-      _self.activeProc = idle;
-    }
-    else {
-      var x = _self.old_state + _self.delta * time;
-      _self.old_state = fixFloat((x > _self.new_state) ? _self.new_state : x);
+    __.old_state = Math.min(
+      fixFloat(__.old_state + __.delta * time),
+      __.new_state
+    );
+
+    if (__.old_state === __.new_state) {
+      __.activeProc = idle;
     }
 
-    return _self.old_state;
+    return __.old_state;
   }
 
 
   function descend(time) {
 
-    if (_self.old_state === _self.new_state) {
-      _self.activeProc = idle;
-    }
-    else {
-      var x = _self.old_state - _self.delta * time;
-      _self.old_state = fixFloat((x < _self.new_state) ? _self.new_state : x);
+    __.old_state = Math.max(
+      fixFloat(__.old_state - __.delta * time),
+      __.new_state
+    );
+
+    if (__.old_state === __.new_state) {
+      __.activeProc = idle;
     }
 
-    return _self.old_state;
+    return __.old_state;
   }
 
 
   function idle() {
 
-    return _self.old_state;
+    return __.old_state;
   }
 
 
   function goto(input) {
 
-    input = fixFloat(input);
-    input = Math.max(input, 0);
-    input = Math.min(input, 100);
-    _self.new_state = input;
+    __.new_state = Math.min(
+      Math.max(fixFloat(input), 0),
+      100
+    );
 
-    if (_self.new_state > _self.old_state) {
-      _self.activeProc = climb;
+    if (__.new_state === __.old_state) {
+      __.activeProc = idle;
     }
-    else if (_self.new_state < _self.old_state) {
-      _self.activeProc = descend;
-    }
+
     else {
-      _self.activeProc = idle;
+      __.activeProc = (__.new_state > __.old_state) ? climb : descend;
     }
 
     return true;
   }
 
 
-  function dump() {
-
-    return _self;
-  }
-
-
   function adjustedResults(val) {
 
     var scalar = fixFloat(val * 0.01);
-    return fixFloat(_self.range * scalar + _self.lo);
+    return fixFloat(__.range * scalar + __.lo);
   }
 
 
@@ -126,17 +143,18 @@
 
   function tick(time) {
 
-    return _self.outputProc(_self.activeProc(time * 0.001));
+    return __.outputProc(__.activeProc(time * 0.001));
   }
 
 
   module.exports = {
     config: config,
+    reset: reset,
     goto: goto,
     dump: dump,
     tick: tick,
     get state(){
-      return _self.activeProc.name;
+      return __.activeProc.name;
     },
     _private: {
       adjustedResults: adjustedResults,
@@ -145,7 +163,6 @@
       descend: descend,
       climb: climb,
       idle: idle,
-      _has: _has,
     }
   };
 
@@ -153,11 +170,6 @@
   function fixFloat(float) {
 
     return parseFloat(float.toPrecision(8));
-  }
-
-  function _has(thing, prop) {
-
-    return thing.hasOwnProperty(prop);
   }
 
 })();

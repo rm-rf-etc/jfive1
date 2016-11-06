@@ -6,13 +6,12 @@ var board = new five.Board();
 var machine = require("./machine.js");
 var led;
 
-function fixFloat(float) {
 
-  return parseFloat(float.toPrecision(8));
-}
+var fixFloat = machine._private.fixFloat;
+
 
 machine.config({
-  delta: 100 / 5,
+  delta: fixFloat(100 / 5),
 });
 
 
@@ -29,7 +28,7 @@ board.on("ready", function() {
   var prev = Date.now();
   setInterval(function(){
 
-    var step = machine.tick(fixFloat(Date.now() - prev));
+    var step = machine.tick(Date.now() - prev);
 
     if (machine.state !== "idle") {
       console.log(step);
