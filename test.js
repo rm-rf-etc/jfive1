@@ -2,7 +2,8 @@
 /* State machine tests */
 
 var assert = require("assert");
-var machine = require("./machine.js");
+var StateMachine = require("./statemachine.js");
+var machine = new StateMachine();
 
 function fixFloat(float) {
 
@@ -28,12 +29,13 @@ console.log(
 
 if (test.basics) {
 
-	assert(machine.config);
-	assert(machine.reset);
-	assert(machine.state);
-	assert(machine.goto);
-	assert(machine.dump);
-	assert(machine.tick);
+	assert(machine.config, 'It has config() method');
+	assert(machine.reset, 'It has reset() method');
+	assert(machine.goto, 'It has goto() method');
+	assert(machine.dump, 'It has dump() method');
+	assert(machine.tick, 'It has tick() method');
+
+	assert.strictEqual(machine.state, 'idle', 'It has state property');
 
 
 	// Test config, reset, and dump methods.
@@ -46,8 +48,8 @@ if (test.basics) {
 		machine.config({
 			hi: 90,
 			lo: 10,
-			old_state: 80,
-			new_state: 70,
+			oldState: 80,
+			newState: 70,
 			delta: 100 / 8,
 		}),
 		true,
@@ -58,8 +60,8 @@ if (test.basics) {
 		{
 			activeProc: machine._private.idle,
 			outputProc: machine._private.adjustedResults,
-			old_state: 80,
-			new_state: 70,
+			oldState: 80,
+			newState: 70,
 			range: 80,
 			hi: 90,
 			lo: 10,
@@ -73,8 +75,8 @@ if (test.basics) {
 		{
 			activeProc: machine._private.idle,
 			outputProc: machine._private.naturalResults,
-			old_state: 0,
-			new_state: 0,
+			oldState: 0,
+			newState: 0,
 			range: 100,
 			hi: 100,
 			lo: 0,
@@ -100,7 +102,7 @@ if (test.basics) {
 	tests();
 
 	function tests() {
-		machine.config({ old_state: 50, new_state: 50 });
+		machine.config({ oldState: 50, newState: 50 });
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.tick(time(1)), 50, 'It idles at 50.' );
 		assert.strictEqual( machine.tick(time(1)), 50, 'It idles at 50.' );
@@ -109,21 +111,21 @@ if (test.basics) {
 		assert.strictEqual( machine.tick(time(1)), 50, 'It idles at 50.' );
 
 		// It changes to climb.
-		machine.config({ old_state: 0, new_state: 0 });
+		machine.config({ oldState: 0, newState: 0 });
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(0).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
 		assert.strictEqual( machine.state, 'climb', 'It enters climb.' );
 
 		// It changes to descend.
-		machine.config({ old_state: 100, new_state: 100 });
+		machine.config({ oldState: 100, newState: 100 });
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(0).' );
 		assert.strictEqual( machine.state, 'descend', 'It enters descend.' );
 
 		// It descends and then idles at destination.
-		machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
+		machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 16.78 ), true, 'It responds `true` after goto(***).' );
@@ -137,7 +139,7 @@ if (test.basics) {
 		assert.strictEqual( machine.tick( time(1) ), 16.78, 'It idles correctly at 16.78.' );
 
 		// It climbs and then idles at destination.
-		machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
+		machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(0).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 72.25 ), true, 'It responds `true` after goto(***).' );
@@ -163,7 +165,7 @@ if (test.advanced) {
 
 	function tests(hi, lo) {
 		// It has proper climbing fractional steps.
-		machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
+		machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(***).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(***).' );
@@ -180,7 +182,7 @@ if (test.advanced) {
 		assert.strictEqual( machine.tick( time(step) ), hi, 'It idles correctly at ' + hi + '.' );
 
 		// It has proper descending fractional steps.
-		machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
+		machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(***).');
@@ -219,7 +221,7 @@ if (test.adjusted_output) {
 
 
 		// It has proper climbing fractional steps.
-		machine.config({ old_state: 0, new_state: 0, delta: 100 / 4 });
+		machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` on goto(0).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
@@ -240,7 +242,7 @@ if (test.adjusted_output) {
 
 
 		// It has proper descending fractional steps.
-		machine.config({ old_state: 100, new_state: 100, delta: 100 / 4 });
+		machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
 		assert.strictEqual( machine.goto( 100 ), true, 'It responds `true` on goto(100).' );
 		assert.strictEqual( machine.state, 'idle', 'It enters idle.' );
 		assert.strictEqual( machine.goto( 0 ), true, 'It responds `true` after goto(***).');

@@ -1,7 +1,8 @@
 
 /* State machine tests */
 
-var machine = require("./machine.js");
+var StateMachine = require("./statemachine.js");
+var machine = new StateMachine();
 
 machine.config({
   delta: 100 / 5,

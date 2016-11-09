@@ -1,8 +1,8 @@
 {
-  "name": "jfive1",
+  "name": "algernon",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "statemachine.js",
   "scripts": {
     "test": "node test.js"
   },
