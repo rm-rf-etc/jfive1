@@ -23,30 +23,23 @@ module.exports = function StateMachine() {
     delta: 100 / 5,
   };
 
+  var self = this;
+  self.state = 'idle';
 
-  Object.defineProperty(this, 'state', { get:function(){
-      return scope.activeProc.name;
-    }
-  });
-
-
-  Object.defineProperty(this, '_private', { get:function(){
-      return {
-        adjustedResults: adjustedResults,
-        naturalResults: naturalResults,
-        fixFloat: fixFloat,
-        descend: descend,
-        climb: climb,
-        idle: idle,
-      };
-    }
-  });
+  self._private = {
+    adjustedResults: adjustedResults,
+    naturalResults: naturalResults,
+    fixFloat: fixFloat,
+    descend: descend,
+    climb: climb,
+    idle: idle,
+  };
 
 
   /*
   Call this to set a new target.
   */
-  this.goto = function goto(input) {
+  self.goto = function goto(input) {
 
     scope.newState = Math.min(
       Math.max(fixFloat(input), 0),
@@ -55,10 +48,19 @@ module.exports = function StateMachine() {
 
     if (scope.newState === scope.oldState) {
       scope.activeProc = idle;
+      self.state = 'idle';
+
+      return true;
+    }
+
+    if (scope.newState > scope.oldState) {
+      scope.activeProc = climb;
+      self.state = 'climb';
     }
 
     else {
-      scope.activeProc = (scope.newState > scope.oldState) ? climb : descend;
+      scope.activeProc = descend;
+      self.state = 'descend';
     }
 
     return true;
@@ -68,7 +70,7 @@ module.exports = function StateMachine() {
   /*
   Our main process. Your code should trigger this in every loop.
   */
-  this.tick = function tick(time) {
+  self.tick = function tick(time) {
 
     return scope.outputProc(scope.activeProc(time * 0.001));
   }
@@ -77,7 +79,7 @@ module.exports = function StateMachine() {
   /*
   Show private data.
   */
-  this.dump = function dump() {
+  self.dump = function dump() {
 
     return scope;
   }
@@ -86,7 +88,7 @@ module.exports = function StateMachine() {
   /*
   Restore defaults.
   */
-  this.reset = function reset() {
+  self.reset = function reset() {
 
     scope = {
       activeProc: idle,
@@ -98,6 +100,7 @@ module.exports = function StateMachine() {
       lo: 0,
       delta: 100 / 5,
     };
+    self.state = 'idle';
 
     return true;
   }
@@ -106,7 +109,7 @@ module.exports = function StateMachine() {
   /*
   Change defaults, or even internal state.
   */
-  this.config = function config(opts) {
+  self.config = function config(opts) {
 
     var changed = false;
 
@@ -143,6 +146,7 @@ module.exports = function StateMachine() {
 
     if (scope.oldState === scope.newState) {
       scope.activeProc = idle;
+      self.state = 'idle';
     }
 
     return scope.oldState;
@@ -158,6 +162,7 @@ module.exports = function StateMachine() {
 
     if (scope.oldState === scope.newState) {
       scope.activeProc = idle;
+      self.state = 'idle';
     }
 
     return scope.oldState;
