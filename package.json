@@ -1,5 +1,5 @@
 {
-  "name": "algernon",
+  "name": "mora-machine",
   "version": "1.0.0",
   "description": "",
   "main": "statemachine.js",
@@ -7,7 +7,7 @@
     "test": "node test.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "johnny-five": "^0.10.3"
   }
