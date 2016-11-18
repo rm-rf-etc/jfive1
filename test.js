@@ -90,7 +90,7 @@ describe("Expected behavior", function(){
 		tests();
 
 		// Run tests with natural outputs.
-		machine.config({ natural_results: true });
+		machine.config({ naturalResults: true });
 		tests();
 
 		function tests() {
@@ -152,7 +152,7 @@ describe("Expected behavior", function(){
 		tests(100, 0);
 
 		// Run tests with natural outputs.
-		machine.config({ natural_results: true });
+		machine.config({ naturalResults: true });
 		tests(100, 0);
 
 		function tests(hi, lo) {

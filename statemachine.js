@@ -127,7 +127,7 @@ module.exports = function StateMachine() {
         changed = true;
       }
 
-      if (key === "naturalResults") {
+      if (key === "naturalResults" && opts[key]) {
         scope.outputProc = naturalResults;
         changed = true;
       }
