@@ -82,6 +82,32 @@ describe("Basic aspects of operation", function(){
 	});
 });
 
+describe("Config method", function(){
+	it("changes from natural to adjusted results", function(){
+
+		expect(
+			machine.dump().outputProc === machine._private.naturalResults
+		).to.be(true);
+
+		expect(
+			machine.config({ hi:75, lo:25 })
+		).to.be(true);
+
+		expect(
+			machine.dump().outputProc === machine._private.adjustedResults
+		).to.be(true);
+
+		expect(
+			machine.config({ naturalResults:true })
+		).to.be(true);
+
+		expect(
+			machine.dump().outputProc === machine._private.naturalResults
+		).to.be(true);
+
+	});
+});
+
 describe("Expected behavior", function(){
 	it("gives correct step increments, state changes, and adjusted output", function(){
 
