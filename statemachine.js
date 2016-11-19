@@ -1,8 +1,14 @@
 
+var module = module || { exports: {} };
+var exports = exports || module.exports;
+module.exports = StateMachine;
+
 /* State machine */
 
 
-module.exports = function StateMachine () {
+function StateMachine () {
+
+  var self = this;
 
   // private
   var scope = {
@@ -13,6 +19,7 @@ module.exports = function StateMachine () {
     // state tracking, 0 - 100
     oldState: 0,
     newState: 0,
+    t: 0,
 
     // range for output values
     range: 100,
@@ -20,17 +27,12 @@ module.exports = function StateMachine () {
     lo: 0,
     dest: 0,
 
-    // max speed
-    maxSpeed: 100 / 5,
-    speed: 0,
-
-    // acceleration & deceleration
-    acceleration: 0,
+    // time range in ms
+    timeSpan: 5 * 1000,
   };
 
-  var self = this;
+  self.fn = new Linear();
   self.state = 'idle';
-
   self._private = {
     adjustedResults: adjustedResults,
     naturalResults: naturalResults,
@@ -40,15 +42,60 @@ module.exports = function StateMachine () {
   };
 
 
+
+  /*
+  Can change defaults or modify internal state.
+  */
+  self.config = function (opts) {
+
+    var changed = false;
+    var pathChanged = false;
+
+    Object.keys(opts).forEach(function(key){
+
+      if (['oldState', 'newState'].indexOf(key) > -1) {
+        scope[key] = fixFloat(opts[key]);
+        pathChanged = true;
+        changed = true;
+      }
+
+      if (key == 'timeSpan') {
+        scope.timeSpan = opts.timeSpan;
+        pathChanged = true;
+        changed = true;
+      }
+
+      if (key == 'fn') {
+        self.fn = opts.fn;
+        changed = true;
+      }
+
+      if (['hi', 'lo'].indexOf(key) > -1) {
+        scope[key] = fixFloat(opts[key]);
+        scope.range = fixFloat(scope.hi - scope.lo);
+        scope.outputProc = adjustedResults;
+        changed = true;
+      }
+
+      if (key === 'naturalResults' && opts[key]) {
+        scope.outputProc = naturalResults;
+        changed = true;
+      }
+    });
+
+    if (pathChanged) self.goto(scope.newState);
+
+    return changed;
+  }
+
+
+
   /*
   Call this to set a new target.
   */
   self.goto = function (input) {
 
-    scope.newState = Math.min(
-      Math.max(fixFloat(input), 0),
-      100
-    );
+    scope.newState = Math.min(1, Math.max(fixFloat(input), 0));
 
     if (scope.newState === scope.oldState) {
       scope.activeProc = idle;
@@ -56,6 +103,9 @@ module.exports = function StateMachine () {
 
       return true;
     }
+
+    self.fn.path(scope.oldState, scope.newState);
+    scope.t = 0;
 
     if (scope.newState > scope.oldState) {
       scope.activeProc = moving;
@@ -72,11 +122,12 @@ module.exports = function StateMachine () {
 
 
   /*
-  Our main process. Your code should trigger this in every loop.
+  Our main process. Your code should trigger this in every loop. Time is in ms.
   */
   self.tick = function (time) {
 
-    return scope.outputProc(scope.activeProc(time * 0.001));
+    time /= scope.timeSpan;
+    return scope.outputProc(scope.activeProc(time));
   }
 
 
@@ -99,12 +150,12 @@ module.exports = function StateMachine () {
       outputProc: naturalResults,
       oldState: 0,
       newState: 0,
+      t: 0,
       range: 100,
       hi: 100,
       lo: 0,
       dest: 0,
-      maxSpeed: 100 / 5,
-      speed: 0,
+      timeSpan: 5 * 1000,
     };
     self.state = 'idle';
 
@@ -112,53 +163,13 @@ module.exports = function StateMachine () {
   }
 
 
-  /*
-  Can change defaults or modify internal state.
-  */
-  self.config = function (opts) {
+  function moving (dt) {
 
-    var changed = false;
-
-    Object.keys(opts).forEach(function(key){
-
-      if (['maxSpeed', 'oldState', 'newState', 'acceleration'].indexOf(key) > -1) {
-        scope[key] = fixFloat(opts[key]);
-        changed = true;
-      }
-
-      if (['hi', 'lo'].indexOf(key) > -1) {
-        scope[key] = fixFloat(opts[key]);
-        scope.range = fixFloat(scope.hi - scope.lo);
-        scope.outputProc = adjustedResults;
-        changed = true;
-      }
-
-      if (key === 'naturalResults' && opts[key]) {
-        scope.outputProc = naturalResults;
-        changed = true;
-      }
-    });
-
-    return changed;
-  }
-
-
-  function moving (time) {
-
-    var speed = getSpeed(time);
-
-    var dir = (scope.newState > scope.oldState) ? 1 : -1;
-
-    scope.oldState = (dir > 0) ? Math.min(
-      scope.newState,
-      fixFloat(scope.oldState + speed * dir)
-    ) : Math.max(
-      scope.newState,
-      fixFloat(scope.oldState + speed * dir)
-    );
+    scope.oldState = fixFloat(self.fn.tick(scope.t += dt));
 
     if (scope.oldState === scope.newState) {
       scope.activeProc = idle;
+      scope.t = 0;
       self.state = 'idle';
     }
 
@@ -173,37 +184,57 @@ module.exports = function StateMachine () {
 
 
   /*
-  Produce value between hi and lo. Takes percent value (0 - 100).
+  Makes possible for `hi` to be less than `lo` or any variation. Takes percent value, { 0 - 100 }.
   */
   function adjustedResults (val) {
 
-    return fixFloat(scope.range * (val * 0.01) + scope.lo);
+    return fixFloat(scope.range * (val) + scope.lo);
   }
 
 
   /*
-  Alternative to adjustedResults. Is ran when hi = 100 and lo = 0.
+  Result output is from [lo=0] and [hi=100].
   */
   function naturalResults (val) {
 
-    return val;
+    return val * 100;
+  }
+}
+
+
+
+function Linear () {
+
+  var self = this;
+  var oldY = 0;
+  var newY = 0;
+  var slope = null;
+
+  self.tick = function (_t) {
+
+    return slope(_t);
+  };
+
+  self.path = function (start, end) {
+
+    newY = end;
+    oldY = start;
+    slope = (oldY < newY) ? up : down;
+
+    return self;
+  };
+
+  function up (_t) {
+    return Math.min(newY, _t + oldY);
   }
 
-
-  function getSpeed (time) {
-
-    scope.speed = fixFloat(
-      (scope.acceleration > 0)
-      ? scope.maxSpeed * time / scope.acceleration * 1000 + scope.speed
-      : scope.maxSpeed * time
-    );
-
-    return scope.speed;
+  function down (_t) {
+    return Math.max(newY, -1 * _t + oldY);
   }
+}
 
 
-  function fixFloat (float) {
+function fixFloat (float) {
 
-    return parseFloat(float.toPrecision(8));
-  }
+  return parseFloat(float.toPrecision(8));
 }
