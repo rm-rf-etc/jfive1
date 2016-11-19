@@ -15,6 +15,9 @@ function time(t) {
 	return t * 1000;
 }
 
+beforeEach(function(){
+	machine.reset();
+})
 
 describe("Object structure", function(){
 	it("has expected methods and properties", function(){
@@ -81,9 +84,10 @@ describe("Config method", function(){
 			range: 100,
 			hi: 100,
 			lo: 0,
-			delta: 100 / 5,
+			dest: 0,
+			maxSpeed: 100 / 5,
+			speed: 0,
 		});
-
 	});
 
 	it("ignores junk input", function(){
@@ -104,12 +108,14 @@ describe("Config method", function(){
 			range: 100,
 			hi: 100,
 			lo: 0,
-			delta: 20,
+			dest: 0,
+			maxSpeed: 20,
+			speed: 0,
 		});
 
 	});
 
-	it("changes state and delta values", function(){
+	it("changes state and maxSpeed values", function(){
 
 		machine.reset();
 
@@ -117,7 +123,7 @@ describe("Config method", function(){
 			machine.config({
 				oldState: 80,
 				newState: 70,
-				delta: 100 / 8,
+				maxSpeed: 100 / 8,
 			})
 		).to.be(true);
 
@@ -131,7 +137,9 @@ describe("Config method", function(){
 			range: 100,
 			hi: 100,
 			lo: 0,
-			delta: 12.5,
+			dest: 0,
+			maxSpeed: 12.5,
+			speed: 0,
 		});
 
 		expect(machine.reset()).to.be(true);
@@ -161,10 +169,10 @@ describe("Expected behavior", function(){
 				expect( machine.tick(time(1)) ).to.be(50);
 			});
 
-			// It changes to climb.
+			// It changes to ascend.
 			machine.config({ oldState: 0, newState: 0 });
 			expect(
-				machine.goto(100) && machine.state === 'climb'
+				machine.goto(100) && machine.state === 'ascend'
 			).to.be(true);
 
 			// It changes to descend.
@@ -175,7 +183,7 @@ describe("Expected behavior", function(){
 
 
 			// It descends and then idles at destination.
-			machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
+			machine.config({ oldState: 100, newState: 100, maxSpeed: 100 / 4 });
 			expect(
 				machine.goto(16.78) && machine.state === 'descend'
 			).to.be(true);
@@ -189,9 +197,9 @@ describe("Expected behavior", function(){
 
 
 			// It climbs and then idles at destination.
-			machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
+			machine.config({ oldState: 0, newState: 0, maxSpeed: 100 / 4 });
 			expect(
-				machine.goto(72.25) && machine.state === 'climb'
+				machine.goto(72.25) && machine.state === 'ascend'
 			).to.be(true);
 
 			[25, 50, 72.25, 72.25, 72.25].forEach(function(expected){
@@ -214,9 +222,9 @@ describe("Expected behavior", function(){
 		tests();
 
 		function tests() {
-			machine.config({ oldState: 0, newState: 0, delta: 100 / 1 });
+			machine.config({ oldState: 0, newState: 0, maxSpeed: 100 / 1 });
 			expect(
-				machine.goto(100) && machine.state === 'climb'
+				machine.goto(100) && machine.state === 'ascend'
 			).to.be(true);
 
 			// It has proper climbing fractional steps.
@@ -224,7 +232,7 @@ describe("Expected behavior", function(){
 				expect( machine.tick(time(0.2)) ).to.be(expected);
 			});
 
-			machine.config({ oldState: 100, newState: 100, delta: 100 / 1 });
+			machine.config({ oldState: 100, newState: 100, maxSpeed: 100 / 1 });
 			expect(
 				machine.goto(0) && machine.state === 'descend'
 			).to.be(true);
@@ -256,30 +264,30 @@ describe("Fractional steps over alternate numerical ranges", function(){
 
 			var mathFn;
 			var step = 0.95;
-			var delta = (hi - lo) / 4;
+			var maxSpeed = (hi - lo) / 4;
 
 
 			// It has proper climbing fractional steps.
-			machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
+			machine.config({ oldState: 0, newState: 0, maxSpeed: 100 / 4 });
 			expect(
-				machine.goto(100) && machine.state === 'climb'
+				machine.goto(100) && machine.state === 'ascend'
 			).to.be(true);
 
 
 			mathFn = (hi > lo) ? Math.min : Math.max;
 			[
-				fixFloat(lo + delta * step * 1),
-				fixFloat(lo + delta * step * 2),
-				fixFloat(lo + delta * step * 3),
-				fixFloat(lo + delta * step * 4),
-				fixFloat(lo + delta * step * 5)
+				fixFloat(lo + maxSpeed * step * 1),
+				fixFloat(lo + maxSpeed * step * 2),
+				fixFloat(lo + maxSpeed * step * 3),
+				fixFloat(lo + maxSpeed * step * 4),
+				fixFloat(lo + maxSpeed * step * 5)
 			].forEach(function(expected){
 				expect( machine.tick(time(step)) ).to.be( mathFn(hi,expected) );
 			});
 
 
 			// It has proper descending fractional steps.
-			machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
+			machine.config({ oldState: 100, newState: 100, maxSpeed: 100 / 4 });
 			expect(
 				machine.goto(0) && machine.state === 'descend'
 			).to.be(true);
@@ -287,11 +295,11 @@ describe("Fractional steps over alternate numerical ranges", function(){
 
 			mathFn = (hi > lo) ? Math.max : Math.min;
 			[
-				fixFloat(hi - delta * step * 1),
-				fixFloat(hi - delta * step * 2),
-				fixFloat(hi - delta * step * 3),
-				fixFloat(hi - delta * step * 4),
-				fixFloat(hi - delta * step * 5)
+				fixFloat(hi - maxSpeed * step * 1),
+				fixFloat(hi - maxSpeed * step * 2),
+				fixFloat(hi - maxSpeed * step * 3),
+				fixFloat(hi - maxSpeed * step * 4),
+				fixFloat(hi - maxSpeed * step * 5)
 			].forEach(function(expected){
 				expect( machine.tick(time(step)) ).to.be( mathFn(lo,expected) );
 			});
@@ -299,3 +307,19 @@ describe("Fractional steps over alternate numerical ranges", function(){
 	})
 });
 
+describe("Acceleration and deceleration", function(){
+	it("accelerates and decelerates", function(){
+
+		machine.config({ oldState: 0, newState: 0, maxSpeed: 100 / 5, acceleration: 2 });
+
+		machine.goto(20);
+		[2.5, 7.5, 15, 20].forEach(function(expected){
+			expect( machine.tick(0.25) ).to.be(expected);
+		});
+
+		machine.goto(0);
+		[15, 7.5, 2.5, 0].forEach(function(expected){
+			expect( machine.tick(0.25) ).to.be(expected);
+		});
+	});
+});

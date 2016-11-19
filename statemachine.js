@@ -18,9 +18,14 @@ module.exports = function StateMachine () {
     range: 100,
     hi: 100,
     lo: 0,
+    dest: 0,
 
-    // rate of change
-    delta: 100 / 5,
+    // max speed
+    maxSpeed: 100 / 5,
+    speed: 0,
+
+    // acceleration & deceleration
+    acceleration: 0,
   };
 
   var self = this;
@@ -30,8 +35,7 @@ module.exports = function StateMachine () {
     adjustedResults: adjustedResults,
     naturalResults: naturalResults,
     fixFloat: fixFloat,
-    descend: descend,
-    climb: climb,
+    moving: moving,
     idle: idle,
   };
 
@@ -54,12 +58,12 @@ module.exports = function StateMachine () {
     }
 
     if (scope.newState > scope.oldState) {
-      scope.activeProc = climb;
-      self.state = 'climb';
+      scope.activeProc = moving;
+      self.state = 'ascend';
     }
 
     else {
-      scope.activeProc = descend;
+      scope.activeProc = moving;
       self.state = 'descend';
     }
 
@@ -98,7 +102,9 @@ module.exports = function StateMachine () {
       range: 100,
       hi: 100,
       lo: 0,
-      delta: 100 / 5,
+      dest: 0,
+      maxSpeed: 100 / 5,
+      speed: 0,
     };
     self.state = 'idle';
 
@@ -115,7 +121,7 @@ module.exports = function StateMachine () {
 
     Object.keys(opts).forEach(function(key){
 
-      if (['delta', 'oldState', 'newState'].indexOf(key) > -1) {
+      if (['maxSpeed', 'oldState', 'newState', 'acceleration'].indexOf(key) > -1) {
         scope[key] = fixFloat(opts[key]);
         changed = true;
       }
@@ -137,27 +143,18 @@ module.exports = function StateMachine () {
   }
 
 
-  function climb (time) {
+  function moving (time) {
 
-    scope.oldState = Math.min(
-      fixFloat(scope.oldState + scope.delta * time),
-      scope.newState
-    );
+    var speed = getSpeed(time);
 
-    if (scope.oldState === scope.newState) {
-      scope.activeProc = idle;
-      self.state = 'idle';
-    }
+    var dir = (scope.newState > scope.oldState) ? 1 : -1;
 
-    return scope.oldState;
-  }
-
-
-  function descend (time) {
-
-    scope.oldState = Math.max(
-      fixFloat(scope.oldState - scope.delta * time),
-      scope.newState
+    scope.oldState = (dir > 0) ? Math.min(
+      scope.newState,
+      fixFloat(scope.oldState + speed * dir)
+    ) : Math.max(
+      scope.newState,
+      fixFloat(scope.oldState + speed * dir)
     );
 
     if (scope.oldState === scope.newState) {
@@ -190,6 +187,18 @@ module.exports = function StateMachine () {
   function naturalResults (val) {
 
     return val;
+  }
+
+
+  function getSpeed (time) {
+
+    scope.speed = fixFloat(
+      (scope.acceleration > 0)
+      ? scope.maxSpeed * time / scope.acceleration * 1000 + scope.speed
+      : scope.maxSpeed * time
+    );
+
+    return scope.speed;
   }
 
 
