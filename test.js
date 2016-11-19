@@ -16,7 +16,7 @@ function time(t) {
 }
 
 
-describe("Basic aspects of operation", function(){
+describe("Object structure", function(){
 	it("has expected methods and properties", function(){
 		expect(machine.config).to.be.ok();
 		expect(machine.reset).to.be.ok();
@@ -25,65 +25,23 @@ describe("Basic aspects of operation", function(){
 		expect(machine.tick).to.be.ok();
 		expect(machine.state).to.be('idle');
 	});
+});
 
-	it("passes basic sanity checks", function(){
-		// Test config, reset, and dump methods.
-		expect(
-			machine.config({ cats: 0, dogs: 1 })
-		).to.be(false);
-
-		expect(
-			machine.config({
-				hi: 90,
-				lo: 10,
-				oldState: 80,
-				newState: 70,
-				delta: 100 / 8,
-			})
-		).to.be(true);
-
-		expect(
-			machine.dump()
-		).to.eql({
-			activeProc: machine._private.idle,
-			outputProc: machine._private.adjustedResults,
-			oldState: 80,
-			newState: 70,
-			range: 80,
-			hi: 90,
-			lo: 10,
-			delta: 12.5,
-		});
-
-		expect(machine.reset()).to.be(true);
-		expect(
-			machine.dump()
-		).to.eql({
-			activeProc: machine._private.idle,
-			outputProc: machine._private.naturalResults,
-			oldState: 0,
-			newState: 0,
-			range: 100,
-			hi: 100,
-			lo: 0,
-			delta: 100 / 5,
-		});
-	});
-
+describe("Calculations", function(){
 	it("gives sane results for floating point calculations", function(){
 
 		// Test floating point math.
 		expect(machine._private.fixFloat(0.1 * 0.2)).to.be(0.02);
 		/*
 
-			Exhaustive testing of all calculations should go here.
+		More testing of all calculations should go here.
 
 		*/
 	});
 });
 
 describe("Config method", function(){
-	it("changes from natural to adjusted results", function(){
+	it("changes between natural and adjusted results", function(){
 
 		expect(
 			machine.dump().outputProc === machine._private.naturalResults
@@ -106,10 +64,146 @@ describe("Config method", function(){
 		).to.be(true);
 
 	});
+
+	it("resets to default settings", function(){
+
+		expect(
+			machine.reset()
+		).to.be(true);
+
+		expect(
+			machine.dump()
+		).to.eql({
+			activeProc: machine._private.idle,
+			outputProc: machine._private.naturalResults,
+			oldState: 0,
+			newState: 0,
+			range: 100,
+			hi: 100,
+			lo: 0,
+			delta: 100 / 5,
+		});
+
+	});
+
+	it("ignores junk input", function(){
+
+		machine.reset();
+
+		expect(
+			machine.config({ cats:0, dogs:1 })
+		).to.be(false);
+
+		expect(
+			machine.dump()
+		).to.eql({
+			activeProc: machine._private.idle,
+			outputProc: machine._private.naturalResults,
+			oldState: 0,
+			newState: 0,
+			range: 100,
+			hi: 100,
+			lo: 0,
+			delta: 20,
+		});
+
+	});
+
+	it("changes state and delta values", function(){
+
+		machine.reset();
+
+		expect(
+			machine.config({
+				oldState: 80,
+				newState: 70,
+				delta: 100 / 8,
+			})
+		).to.be(true);
+
+		expect(
+			machine.dump()
+		).to.eql({
+			activeProc: machine._private.idle,
+			outputProc: machine._private.naturalResults,
+			oldState: 80,
+			newState: 70,
+			range: 100,
+			hi: 100,
+			lo: 0,
+			delta: 12.5,
+		});
+
+		expect(machine.reset()).to.be(true);
+	});
 });
 
 describe("Expected behavior", function(){
 	it("gives correct step increments, state changes, and adjusted output", function(){
+
+		machine.config({ oldState: 0, newState: 0 });
+		expect(
+			machine.goto(0) && machine.state === 'idle'
+		).to.be(true);
+
+		// Run tests with natural outputs.
+		machine.config({ naturalResults: true });
+		tests();
+
+		// Run same test but through adjustedResults.
+		machine.config({ hi: 100, lo: 0 });
+		tests();
+
+		function tests() {
+			machine.config({ oldState: 50, newState: 50 });
+			expect( machine.state ).to.be('idle');
+			[50,50,50,50,50].forEach(function(expected){
+				expect( machine.tick(time(1)) ).to.be(50);
+			});
+
+			// It changes to climb.
+			machine.config({ oldState: 0, newState: 0 });
+			expect(
+				machine.goto(100) && machine.state === 'climb'
+			).to.be(true);
+
+			// It changes to descend.
+			machine.config({ oldState: 100, newState: 100 });
+			expect(
+				machine.goto(0) && machine.state === 'descend'
+			).to.be(true);
+
+
+			// It descends and then idles at destination.
+			machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
+			expect(
+				machine.goto(16.78) && machine.state === 'descend'
+			).to.be(true);
+
+			[75, 50, 25, 16.78, 16.78, 16.78].forEach(function(expected){
+				expect( machine.tick(time(1)) ).to.be(expected);
+				if (expected === 16.78) {
+					expect( machine.state ).to.be('idle');
+				}
+			});
+
+
+			// It climbs and then idles at destination.
+			machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
+			expect(
+				machine.goto(72.25) && machine.state === 'climb'
+			).to.be(true);
+
+			[25, 50, 72.25, 72.25, 72.25].forEach(function(expected){
+				expect( machine.tick(time(1)) ).to.be(expected);
+				if (expected === 72.25) {
+					expect( machine.state ).to.be('idle');
+				}
+			});
+		}
+	});
+
+	it("it climbs and descends in correct incremental amounts", function(){
 
 		// Run tests with adjusted outputs.
 		machine.config({ hi: 100, lo: 0 });
@@ -120,106 +214,30 @@ describe("Expected behavior", function(){
 		tests();
 
 		function tests() {
-			machine.config({ oldState: 50, newState: 50 });
-			expect( machine.state ).to.be('idle');
-			expect( machine.tick(time(1)) ).to.be(50);
-			expect( machine.tick(time(1)) ).to.be(50);
-			expect( machine.tick(time(1)) ).to.be(50);
-			expect( machine.tick(time(1)) ).to.be(50);
-			expect( machine.tick(time(1)) ).to.be(50);
-
-			// It changes to climb.
-			machine.config({ oldState: 0, newState: 0 });
-			expect( machine.goto( 0 ) ).to.be(true);
-			expect( machine.state).to.be('idle');
-			expect( machine.goto( 100 ) ).to.be(true);
-			expect( machine.state ).to.be('climb');
-
-			// It changes to descend.
-			machine.config({ oldState: 100, newState: 100 });
-			expect( machine.goto( 100 ) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto( 0 ) ).to.be(true);
-			expect( machine.state ).to.be('descend');
-
-			// It descends and then idles at destination.
-			machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
-			expect( machine.goto(100) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto(16.78) ).to.be(true);
-			expect( machine.state ).to.be('descend');
-			expect( machine.tick(time(1)) ).to.be(75);
-			expect( machine.tick(time(1)) ).to.be(50);
-			expect( machine.tick(time(1)) ).to.be(25);
-			expect( machine.tick(time(1)) ).to.be(16.78);
-			expect( machine.state ).to.be('idle');
-			expect( machine.tick(time(1)) ).to.be(16.78);
-			expect( machine.tick(time(1)) ).to.be(16.78);
-
-			// It climbs and then idles at destination.
-			machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
-			expect( machine.goto(0) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto(72.25) ).to.be(true);
-			expect( machine.state ).to.be('climb');
-			expect( machine.tick(time(1)) ).to.be(25);
-			expect( machine.tick(time(1)) ).to.be(50);
-			expect( machine.tick(time(1)) ).to.be(72.25);
-			expect( machine.state ).to.be('idle');
-			expect( machine.tick(time(1)) ).to.be(72.25);
-			expect( machine.tick(time(1)) ).to.be(72.25);
-		}
-	});
-
-	it("it climbs and descends in correct incremental amounts", function(){
-
-		// Run tests with adjusted outputs.
-		machine.config({ hi: 100, lo: 0 });
-		tests(100, 0);
-
-		// Run tests with natural outputs.
-		machine.config({ naturalResults: true });
-		tests(100, 0);
-
-		function tests(hi, lo) {
-			machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
-			expect( machine.goto(0) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto(100) ).to.be(true);
-			expect( machine.state ).to.be('climb');
+			machine.config({ oldState: 0, newState: 0, delta: 100 / 1 });
+			expect(
+				machine.goto(100) && machine.state === 'climb'
+			).to.be(true);
 
 			// It has proper climbing fractional steps.
-			var step = 0.2;
-			for (var i=0; i<4; i=fixFloat(i+step)) {
-				var actual = machine.tick(time(step));
-				var expected = fixFloat(100 / 4 * (i+step));
-				expect(actual).to.be(expected);
-			}
-			expect( machine.tick(time(step)) ).to.be(hi);
-			expect( machine.tick(time(step)) ).to.be(hi);
-			expect( machine.tick(time(step)) ).to.be(hi);
+			[20,40,60,80,100,100,100].forEach(function(expected){
+				expect( machine.tick(time(0.2)) ).to.be(expected);
+			});
 
-			machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
-			expect( machine.goto(100) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto(0) ).to.be(true);
-			expect( machine.state ).to.be('descend');
+			machine.config({ oldState: 100, newState: 100, delta: 100 / 1 });
+			expect(
+				machine.goto(0) && machine.state === 'descend'
+			).to.be(true);
 
 			// It has proper descending fractional steps.
-			var step = 0.2;
-			for (var i=4; i>0; i=fixFloat(i-step)) {
-				var actual = machine.tick(time(step));
-				var expected = fixFloat(100 / 4 * (i-step));
-				expect(actual).to.be(expected);
-			}
-			expect( machine.tick(time(step)) ).to.be(lo);
-			expect( machine.tick(time(step)) ).to.be(lo);
-			expect( machine.tick(time(step)) ).to.be(lo);
+			[80,60,40,20,0,0,0].forEach(function(expected){
+				expect( machine.tick(time(0.2)) ).to.be(expected);
+			});
 		}
 	});
 });
 
-describe("Advanced behavior", function(){
+describe("Fractional steps over alternate numerical ranges", function(){
 	it("gives correct adjusted output both inverted and not", function(){
 
 		// Run tests with adjusted outputs.
@@ -238,47 +256,45 @@ describe("Advanced behavior", function(){
 
 			var mathFn;
 			var step = 0.95;
+			var delta = (hi - lo) / 4;
 
 
 			// It has proper climbing fractional steps.
 			machine.config({ oldState: 0, newState: 0, delta: 100 / 4 });
-			expect( machine.goto(0) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto(100) ).to.be(true);
-			expect( machine.state ).to.be('climb');
+			expect(
+				machine.goto(100) && machine.state === 'climb'
+			).to.be(true);
 
 
 			mathFn = (hi > lo) ? Math.min : Math.max;
-
-			for (var i=0; i<4; i=fixFloat(i+step)) {
-				var actual = machine.tick(time(step));
-				var expected = mathFn(hi, fixFloat(100 / 4 * (i+step) * 0.01 * range + lo));
-				expect(actual).to.be(expected);
-			}
-			expect( machine.tick(time(step)) ).to.be(hi);
-			expect( machine.tick(time(step)) ).to.be(hi);
-			expect( machine.tick(time(step)) ).to.be(hi);
-
+			[
+				fixFloat(lo + delta * step * 1),
+				fixFloat(lo + delta * step * 2),
+				fixFloat(lo + delta * step * 3),
+				fixFloat(lo + delta * step * 4),
+				fixFloat(lo + delta * step * 5)
+			].forEach(function(expected){
+				expect( machine.tick(time(step)) ).to.be( mathFn(hi,expected) );
+			});
 
 
 			// It has proper descending fractional steps.
 			machine.config({ oldState: 100, newState: 100, delta: 100 / 4 });
-			expect( machine.goto(100) ).to.be(true);
-			expect( machine.state ).to.be('idle');
-			expect( machine.goto(0) ).to.be(true);
-			expect( machine.state ).to.be('descend');
+			expect(
+				machine.goto(0) && machine.state === 'descend'
+			).to.be(true);
 
 
 			mathFn = (hi > lo) ? Math.max : Math.min;
-
-			for (var i=4; i>0; i=fixFloat(i-step)) {
-				var actual = machine.tick(time(step));
-				var expected = mathFn(lo, fixFloat(100 / 4 * (i-step) * 0.01 * range + lo));
-				expect(actual).to.be(expected);
-			}
-			expect( machine.tick(time(step)) ).to.be(lo);
-			expect( machine.tick(time(step)) ).to.be(lo);
-			expect( machine.tick(time(step)) ).to.be(lo);
+			[
+				fixFloat(hi - delta * step * 1),
+				fixFloat(hi - delta * step * 2),
+				fixFloat(hi - delta * step * 3),
+				fixFloat(hi - delta * step * 4),
+				fixFloat(hi - delta * step * 5)
+			].forEach(function(expected){
+				expect( machine.tick(time(step)) ).to.be( mathFn(lo,expected) );
+			});
 		}
 	})
 });
