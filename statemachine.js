@@ -2,7 +2,7 @@
 /* State machine */
 
 
-module.exports = function StateMachine() {
+module.exports = function StateMachine () {
 
   // private
   var scope = {
@@ -39,7 +39,7 @@ module.exports = function StateMachine() {
   /*
   Call this to set a new target.
   */
-  self.goto = function goto(input) {
+  self.goto = function (input) {
 
     scope.newState = Math.min(
       Math.max(fixFloat(input), 0),
@@ -70,7 +70,7 @@ module.exports = function StateMachine() {
   /*
   Our main process. Your code should trigger this in every loop.
   */
-  self.tick = function tick(time) {
+  self.tick = function (time) {
 
     return scope.outputProc(scope.activeProc(time * 0.001));
   }
@@ -79,7 +79,7 @@ module.exports = function StateMachine() {
   /*
   Show private data.
   */
-  self.dump = function dump() {
+  self.dump = function () {
 
     return scope;
   }
@@ -88,7 +88,7 @@ module.exports = function StateMachine() {
   /*
   Restore defaults.
   */
-  self.reset = function reset() {
+  self.reset = function () {
 
     scope = {
       activeProc: idle,
@@ -107,27 +107,27 @@ module.exports = function StateMachine() {
 
 
   /*
-  Change defaults, or even internal state.
+  Can change defaults or modify internal state.
   */
-  self.config = function config(opts) {
+  self.config = function (opts) {
 
     var changed = false;
 
     Object.keys(opts).forEach(function(key){
 
-      if (["delta", "oldState", "newState"].indexOf(key) > -1) {
+      if (['delta', 'oldState', 'newState'].indexOf(key) > -1) {
         scope[key] = fixFloat(opts[key]);
         changed = true;
       }
 
-      if (["hi", "lo"].indexOf(key) > -1) {
+      if (['hi', 'lo'].indexOf(key) > -1) {
         scope[key] = fixFloat(opts[key]);
-        scope.range = scope.hi - scope.lo;
+        scope.range = fixFloat(scope.hi - scope.lo);
         scope.outputProc = adjustedResults;
         changed = true;
       }
 
-      if (key === "naturalResults" && opts[key]) {
+      if (key === 'naturalResults' && opts[key]) {
         scope.outputProc = naturalResults;
         changed = true;
       }
@@ -137,7 +137,7 @@ module.exports = function StateMachine() {
   }
 
 
-  function climb(time) {
+  function climb (time) {
 
     scope.oldState = Math.min(
       fixFloat(scope.oldState + scope.delta * time),
@@ -153,7 +153,7 @@ module.exports = function StateMachine() {
   }
 
 
-  function descend(time) {
+  function descend (time) {
 
     scope.oldState = Math.max(
       fixFloat(scope.oldState - scope.delta * time),
@@ -169,26 +169,31 @@ module.exports = function StateMachine() {
   }
 
 
-  function idle() {
+  function idle () {
 
     return scope.oldState;
   }
 
 
-  function adjustedResults(val) {
+  /*
+  Produce value between hi and lo. Takes percent value (0 - 100).
+  */
+  function adjustedResults (val) {
 
-    var scalar = fixFloat(val * 0.01);
-    return fixFloat(scope.range * scalar + scope.lo);
+    return fixFloat(scope.range * (val * 0.01) + scope.lo);
   }
 
 
-  function naturalResults(val) {
+  /*
+  Alternative to adjustedResults. Is ran when hi = 100 and lo = 0.
+  */
+  function naturalResults (val) {
 
     return val;
   }
 
 
-  function fixFloat(float) {
+  function fixFloat (float) {
 
     return parseFloat(float.toPrecision(8));
   }
